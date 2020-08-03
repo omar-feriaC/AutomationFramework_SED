@@ -24,6 +24,7 @@ namespace AutomationFramework_SED.Reports
         private static ExtentReports _objExtentReport;
         private static ExtentTest _objTest;
 
+
         /// <summary>
         /// 
         /// </summary>
