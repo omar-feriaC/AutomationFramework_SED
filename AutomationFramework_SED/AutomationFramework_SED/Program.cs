@@ -9,6 +9,7 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using DocumentFormat.OpenXml;
 
 namespace AutomationFramework_SED
 {
@@ -17,22 +18,31 @@ namespace AutomationFramework_SED
         static void Main(string[] args)
         {
 
-            TestclsData objData = new TestclsData();
+            SLDocument s2 = new SLDocument(@"C:\Users\omar.feria\Downloads\P&G.xlsx");
+            s2.SelectWorksheet("SetupInfo");
+            s2.SetCellValue(2,4, "hlll");
+            s2.Save();
+            Console.Clear();
+            /***
+             * TestclsData objData = new TestclsData();
+            objData.HasColumnSpaces = true;
             objData.LoadFile(@"C:\Users\omar.feria\Downloads\P&G.xlsx", "SetupInfo");
             for (int i = 1; i <= objData.RowCount; i++)
             {
                 objData.CurrentRow = i;
+                Console.WriteLine(objData.GetValueByColumn("Setup Item", "xzzxf"));
+                
                 //Console.WriteLine(objData.GetValueNew(2, ""));
             }
 
             Console.WriteLine();
 
-
+    */
 
             //TestclsData.FilePath = @"C:\Users\omar.feria\Downloads\P&G.xlsx";
             //TestclsData.LoadFile(@"C:\Users\omar.feria\Downloads\P&G.xlsx");
             //TestclsData.LoadSheet("SetupInfo");
-           
+
 
 
 

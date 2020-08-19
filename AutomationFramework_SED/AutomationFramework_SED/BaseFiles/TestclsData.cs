@@ -16,6 +16,7 @@ namespace AutomationFramework_SED.BaseFiles
         private static SLDocument _objFile;
         private static int _intCurrentRow;
         private static bool _blColumnNames;
+        private static bool _blColNameSpaces;
         private static bool _blSheetInUse;
         private static int _intColCount;
         private static int _intRowCount;
@@ -51,6 +52,12 @@ namespace AutomationFramework_SED.BaseFiles
             }
         }
 
+        public bool HasColumnSpaces
+        {
+            get { return _blColNameSpaces; }
+            set { _blColNameSpaces = value; }
+        }
+
         public int ColumnCount
         {
             get
@@ -76,7 +83,6 @@ namespace AutomationFramework_SED.BaseFiles
             set
             {
                 _intRowStartIndex = value;
-                //_intColumnRowIndex = (_blColumnNames ? value - 1 : value);
                 _intCurrentRow = (_intCurrentRow > _intRowStartIndex ? _intCurrentRow : _intRowStartIndex);
             }
         }
@@ -121,6 +127,7 @@ namespace AutomationFramework_SED.BaseFiles
         public TestclsData()
         {
             _intCurrentRow = 2;
+            _blColNameSpaces = false;
             _blColumnNames = true;
             _blSheetInUse = false;
             _intColCount = -1;
@@ -175,60 +182,34 @@ namespace AutomationFramework_SED.BaseFiles
             return strCleanString;
         }
 
-        public static void FileOpen(string pstrFile, [Optional] string pstrSheet)
+        private static string _RemoveSpecialCharsNoSpaces(string pstrString)
         {
-            if (!string.IsNullOrEmpty(pstrFile))
-            {
-                if (File.Exists(pstrFile))
-                {
-                    _objFile = new SLDocument(pstrFile);
-                    _blColumnNames = true;
-                    _intCurrentRow = 2;
-                    _intRowStartIndex = _objFile.GetWorksheetStatistics().StartRowIndex;
-                    _intColumnStartIndex = _objFile.GetWorksheetStatistics().StartColumnIndex;
-                    _intColumnRowIndex = 1;
-                    _blSheetInUse = true;
-                    _GetRowCount();
-                    _GetColumnCount();
+            string strCleanString = pstrString;
+            
+strCleanString = strCleanString.Replace("\n", "");
+            strCleanString = strCleanString.Replace("\r", "");
 
-                    if (!string.IsNullOrEmpty(pstrSheet))
-                    {
-                        if (_objFile.GetSheetNames().Contains(pstrSheet))
-                        {
-                            _objFile.SelectWorksheet(pstrSheet);
-                        }
-                    }
+            return strCleanString;
+        }
+
+        public static void _GetHeadersNames()
+        {
+            _dicHeaders = new Dictionary<string, int>();
+            if (!_blColNameSpaces)
+            {
+                for (int i = 1; i <= _objFile.GetWorksheetStatistics().NumberOfColumns; i++)
+                {
+                    _dicHeaders.Add(_RemoveSpecialChars(_objFile.GetCellValueAsString(1, i)), i);
+                }
+            }
+            else
+            {
+                for (int i = 1; i <= _objFile.GetWorksheetStatistics().NumberOfColumns; i++)
+                {
+                    _dicHeaders.Add(_RemoveSpecialCharsNoSpaces(_objFile.GetCellValueAsString(1, i)), i);
                 }
             }
         }
-                
-        public string GetValue(int pintColumnIndex, [Optional] string pstrDefaultValue)
-        {
-            if (string.IsNullOrEmpty(pstrDefaultValue)) { pstrDefaultValue = string.Empty; };
-
-            if (_objFile != null && _blSheetInUse)
-            {
-                pstrDefaultValue = _objFile.GetCellValueAsString(_intCurrentRow, pintColumnIndex);
-            }
-            return pstrDefaultValue;
-        }
-
-        public string GetValue(string pstrColumnName, [Optional] string pstrDefaultValue)
-        {
-            if (string.IsNullOrEmpty(pstrDefaultValue)) { pstrDefaultValue = string.Empty; };
-            int intColumnIndex = 0;
-
-            if (_objFile != null && _blSheetInUse)
-            {
-                intColumnIndex = _GetColumnIndex(pstrColumnName);
-                pstrDefaultValue = _objFile.GetCellValueAsString(_intCurrentRow, intColumnIndex);
-            }
-            return pstrDefaultValue;
-        }
-
-
-
-        //NEW METHODS
 
         public void LoadFile(string pstrFile, string pstrSheet)
         {
@@ -255,21 +236,46 @@ namespace AutomationFramework_SED.BaseFiles
                     }
                 }
             }
-            
         }
 
-        public static void _GetHeadersNames()
+        public string GetValueByIndex(int pintColumnIndex, [Optional] string pstrDefaultValue)
         {
-            _dicHeaders = new Dictionary<string, int>();
-            for (int i = 1; i <= _objFile.GetWorksheetStatistics().NumberOfColumns; i++)
+            if (string.IsNullOrEmpty(pstrDefaultValue)) { pstrDefaultValue = string.Empty; };
+
+            if (_objFile != null && _blSheetInUse)
             {
-                _dicHeaders.Add(_RemoveSpecialChars(_objFile.GetCellValueAsString(1, i)), i);
+                pstrDefaultValue = _objFile.GetCellValueAsString(_intCurrentRow, pintColumnIndex);
             }
+            return pstrDefaultValue;
         }
 
-        public static void _HeaderExist() { }
+        public string GetValueByColumn(string pstrColumnName, [Optional] string pstrDefaultValue)
+        {
+            if (string.IsNullOrEmpty(pstrDefaultValue)) { pstrDefaultValue = string.Empty; };
 
+            if (_objFile != null && _blSheetInUse && _dicHeaders.Count > 0)
+            {
+                if (_dicHeaders.ContainsKey(pstrColumnName))
+                {
+                    pstrDefaultValue = _objFile.GetCellValueAsString(_intCurrentRow, _dicHeaders[pstrColumnName]);
+                }
+                else
+                {
+                    pstrDefaultValue = "";
+                }
+            }
+            return pstrDefaultValue;
+        }
 
+        public void SaveCellValue(string pstrColumnName, string pstrDefaultValue)
+        {
+            if (string.IsNullOrEmpty(pstrDefaultValue)) { pstrDefaultValue = string.Empty; };
+            if (_dicHeaders.ContainsKey(pstrColumnName))
+            {
+                _objFile.SetCellValue(_intCurrentRow, _dicHeaders[pstrColumnName], pstrDefaultValue);
+                _objFile.Save();
+            }
+        } 
 
     }
 }
